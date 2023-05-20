@@ -1,4 +1,4 @@
-#include "../include/camera.h"
+#include "camera.h"
 
 Camera::Camera(float fov, float aspectRatio, float near, float far)
     : _fov(fov), _aspectRatio(aspectRatio), _near(near), _far(far) {

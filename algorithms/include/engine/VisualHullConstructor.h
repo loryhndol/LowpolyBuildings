@@ -50,6 +50,7 @@ class VisualHullConstructor {
   const Config& _conf;
   std::unordered_map<int, std::vector<int>> groupTrianglesIntoRegions(
       SurfaceMesh& Mi);
+  std::vector<Eigen::Vector3d> _topKDirections;
 
   /**
    * fit a plane for each region using the L2 metric
@@ -64,10 +65,11 @@ class VisualHullConstructor {
 
   std::vector<Eigen::Vector3d> generateViewDirections(
       std::vector<WeightedVector>& weightedViewDirections, int k);
+  std::vector<Eigen::Vector3d> pickTopViewDirections(int k, SurfaceMesh& Mi);
 
  public:
   explicit VisualHullConstructor(const Config& conf);
   SurfaceMesh run(SurfaceMesh& Mi);
-  std::vector<Eigen::Vector3d> pickTopViewDirections(int k, SurfaceMesh& Mi);
+  std::vector<Eigen::Vector3d> getViewDirections();
 };
 }  // namespace LowpolyGen

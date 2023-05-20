@@ -1,4 +1,4 @@
-#include "../include/OBJLoader.h"
+#include "OBJLoader.h"
 
 MeshModel::MeshModel(std::vector<Eigen::Vector3f>& verts)
     : numVertices(verts.size()),

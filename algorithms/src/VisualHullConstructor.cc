@@ -1,4 +1,4 @@
-#include "../include/engine/VisualHullConstructor.h"
+#include "engine/VisualHullConstructor.h"
 
 namespace LowpolyGen {
 Graph::Graph(int numOfNodes) : _numOfRegions(numOfNodes) {
@@ -33,19 +33,9 @@ int Graph::numOfNodes() { return elements.size(); }
 VisualHullConstructor::VisualHullConstructor(const Config& conf)
     : _conf(conf){};
 
- 
-Eigen::AlignedBox3d makeBBox(const SurfaceMesh& mesh) {
-  Eigen::AlignedBox3d bbox;
-  for (const auto& v : mesh.vertices()) {
-    bbox.extend(Eigen::Vector3d(v.point().x(), v.point().y(), v.point().z()));
-  }
-  return bbox;
-}
-
-
 SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
   std::vector<SurfaceMesh> P;
-  std::vector<Eigen::Vector3d> D = pickTopViewDirections(_conf.k, Mi);
+  _topKDirections = pickTopViewDirections(_conf.k, Mi);
 
   int idForPoint = 0;
   Eigen::Vector3d maxCoords;
@@ -67,7 +57,7 @@ SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
 
   double diagonalLength = (maxCoords - minCoords).norm();
 
-  for (Eigen::Vector3d& d : D) {
+  for (Eigen::Vector3d& d : _topKDirections) {
     Kernel::Vector_3 direction(d.x(), d.y(), d.z());
     Silhouette S(Mi, direction, diagonalLength);
     S.simplify();
@@ -428,6 +418,10 @@ std::vector<Eigen::Vector3d> VisualHullConstructor::pickTopViewDirections(
 
   std::cout << "view directions: " << finalViewDirections.size() << std::endl;
   return finalViewDirections;
+}
+
+std::vector<Eigen::Vector3d> VisualHullConstructor::getViewDirections() {
+  return std::move(_topKDirections);
 }
 
 }  // namespace LowpolyGen

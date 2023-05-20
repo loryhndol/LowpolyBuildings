@@ -12,4 +12,7 @@ file(GLOB LIB_HDRS include/engine/*.h)
 set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(Engine SHARED ${LIB_SOURCE})
 
-target_link_libraries(Engine PRIVATE CGAL::CGAL Eigen3::Eigen)
+include_directories(${CMAKE_SOURCE_DIR}/renderer/include include)
+include(${CMAKE_SOURCE_DIR}/third-party/third-party.cmake)
+target_include_directories(Engine PRIVATE ${GLAD_DIR}/include ${GLFW_DIR}/include)
+target_link_libraries(Engine PRIVATE CGAL::CGAL Eigen3::Eigen Renderer)

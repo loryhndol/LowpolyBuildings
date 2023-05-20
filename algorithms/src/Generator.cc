@@ -1,4 +1,4 @@
-#include "../include/engine/Generator.h"
+#include "engine/Generator.h"
 
 namespace LowpolyGen {
 
@@ -31,7 +31,11 @@ std::vector<LowpolyGen::SurfaceMesh> Generator::run(std::string& meshPath) {
 
   VisualHullConstructor vhc(_conf);
   SurfaceMesh Mv = vhc.run(Mi);
-  SurfaceMesh Mc = CarvedMeshGenerator()(Mi, Mv, _conf.N, _conf.epsilonTau);
+
+  std::vector<Eigen::Vector3d> K = vhc.getViewDirections();
+  CarvedMeshGenerator cmg(K);
+  SurfaceMesh Mc = cmg.run(Mi, Mv, _conf.N, _conf.epsilonTau);
+
   std::vector<SurfaceMesh> paretoSet = calculateParetoSet(Mc);
   return paretoSet;
 }

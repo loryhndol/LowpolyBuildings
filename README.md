@@ -18,3 +18,11 @@ Implementation of `Xifeng Gao, Kui Wu, Zherong Pan. Low-poly Mesh Generation for
 cmake -B build -DEigen3_DIR=$HOME/mypackages/share/eigen3/cmake/
 cmake --build build
 ```
+
+## Run Demo
+### Windows
+```powershell
+# copy engine's dll to the directory where the executable lies at
+cp .\build\algorithms\Debug\Engine.dll .\build\demo\Debug
+.\build\demo\Debug\demo.exe
+```

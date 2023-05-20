@@ -1,4 +1,4 @@
-#include "../include/shaderBuilder.h"
+#include "shaderBuilder.h"
 
 ShaderBuilder* ShaderBuilder::pInstance = nullptr;
 

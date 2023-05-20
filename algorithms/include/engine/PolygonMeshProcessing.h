@@ -7,6 +7,17 @@
 #include <CGAL/Constrained_triangulation_plus_2.h>
 #include <CGAL/Polygon_with_holes_2.h>
 
+// repair mesh
+#include <CGAL/Polygon_mesh_processing/internal/repair_extra.h>
+#include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/polygon_soup_to_polygon_mesh.h>
+#include <CGAL/Polygon_mesh_processing/repair.h>
+#include <CGAL/Polygon_mesh_processing/repair_degeneracies.h>
+#include <CGAL/Polygon_mesh_processing/repair_polygon_soup.h>
+#include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
+
 namespace LowpolyGen {
 
 /**
@@ -18,9 +29,11 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& path2D,
 
 SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B);
 
-SurfaceMesh makeBBox(const SurfaceMesh& mesh);
+SurfaceMesh makeBBox(const SurfaceMesh& Mi);
 
 bool WithinSilhouette(const Kernel::Point_2& pt,
                       const CGAL::Polygon_with_holes_2<Kernel>& silhouette);
+
+void repairMesh(SurfaceMesh& mesh);
 
 }  // namespace LowpolyGen

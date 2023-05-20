@@ -1,4 +1,4 @@
-#include "../include/engine/Silhouette.h"
+#include "engine/Silhouette.h"
 
 namespace LowpolyGen {
 Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
@@ -39,14 +39,12 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
     }
   }
 
-  for (auto poly : polygonList) {
-    std::cout << "M ";
-    for (auto pt : poly.vertices()) {
-      std::cout << pt.x() << " " << pt.y() << " ";
-    }
-    std::cout << std::endl;
-  }
-
+  // for (auto poly : polygonList) {
+  //   std::cout << "M ";
+  //   for (auto pt : poly.vertices()) {
+  //     std::cout << pt.x() << " " << pt.y() << " ";
+  //   }
+  std::cout << std::endl;
   CGAL::join(polygonList.begin(), polygonList.end(),
              std::back_inserter(_silhouette2D));
 }
