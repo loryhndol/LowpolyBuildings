@@ -16,11 +16,13 @@ namespace LowpolyGen {
 class CarvedMeshGenerator {
  private:
   const std::vector<Eigen::Vector3d>& _K;
+  const Config& _conf;
 
  public:
-  CarvedMeshGenerator(const std::vector<Eigen::Vector3d>& K);
-  SurfaceMesh operator()(const SurfaceMesh& Mi, const SurfaceMesh& Mv, int N,
-                         double epsilonTau);
+  CarvedMeshGenerator(const std::vector<Eigen::Vector3d>& K,
+                      const Config& conf);
+  SurfaceMesh run(const SurfaceMesh& Mi, const SurfaceMesh& Mv, int N,
+                  double epsilonTau);
 };
 
 };  // namespace LowpolyGen

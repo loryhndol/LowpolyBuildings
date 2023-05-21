@@ -8,23 +8,12 @@
 
 #include <unordered_map>
 
+#include "Graph.h"
 #include "PolygonMeshProcessing.h"
 #include "Silhouette.h"
 #include "calculateTau.h"
 
 namespace LowpolyGen {
-
-class Graph {
- private:
-  std::vector<int> elements;
-  int _numOfRegions;
-
- public:
-  Graph(int numOfNodes);
-  bool unite(int u, int v);
-  int find(int x);
-  int numOfNodes();
-};
 
 struct WeightedVector {
   Eigen::Vector3d _d;

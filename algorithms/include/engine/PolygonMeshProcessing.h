@@ -8,6 +8,7 @@
 #include <CGAL/Polygon_with_holes_2.h>
 
 // repair mesh
+#include <CGAL/Aff_transformation_3.h>
 #include <CGAL/Polygon_mesh_processing/internal/repair_extra.h>
 #include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
 #include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
@@ -16,6 +17,7 @@
 #include <CGAL/Polygon_mesh_processing/repair_degeneracies.h>
 #include <CGAL/Polygon_mesh_processing/repair_polygon_soup.h>
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
+#include <CGAL/Polygon_mesh_processing/transform.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
 
 namespace LowpolyGen {
@@ -29,11 +31,25 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& path2D,
 
 SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B);
 
+SurfaceMesh subtract(const SurfaceMesh& A, const SurfaceMesh& B);
+
 SurfaceMesh makeBBox(const SurfaceMesh& Mi);
 
 bool WithinSilhouette(const Kernel::Point_2& pt,
                       const CGAL::Polygon_with_holes_2<Kernel>& silhouette);
 
 void repairMesh(SurfaceMesh& mesh);
+
+#include <CGAL/boost/graph/copy_face_graph.h>
+
+// Reference:
+// https://doc.cgal.org/latest/BGL/BGL_polyhedron_3_2copy_polyhedron_8cpp-example.html#a5
+template <class SourceKernel, class TargetKernel>
+CGAL::Surface_mesh<CGAL::Point_3<TargetKernel>> convertSurfaceMeshKernel(
+    const CGAL::Surface_mesh<CGAL::Point_3<SourceKernel>>& src) {
+  CGAL::Surface_mesh<CGAL::Point_3<TargetKernel>> tar;
+  CGAL::copy_face_graph(src, tar);
+  return tar;
+}
 
 }  // namespace LowpolyGen

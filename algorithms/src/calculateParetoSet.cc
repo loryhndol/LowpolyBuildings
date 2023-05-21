@@ -2,17 +2,20 @@
 
 namespace LowpolyGen {
 std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
-    const LowpolyGen::SurfaceMesh& mesh) {
+    const LowpolyGen::SurfaceMesh& mesh, int maxTolerantElementsCnt) {
+  auto MeshApprox =
+      convertSurfaceMeshKernel<Kernel, CGAL::Simple_cartesian<double>>(mesh);
+
   std::vector<SurfaceMesh> meshArray;
 
-  while (mesh.number_of_faces() > 4) {
+  while (MeshApprox.number_of_faces() > 4) {
     // keep 90% of edges
     double stop_ratio = 0.9;
     CGAL::Surface_mesh_simplification::Count_ratio_stop_predicate<
         CGAL::Surface_mesh<CGAL::Simple_cartesian<double>::Point_3>>
         stop(stop_ratio);
 
-    int r = CGAL::Surface_mesh_simplification::edge_collapse(mesh, stop);
+    int r = CGAL::Surface_mesh_simplification::edge_collapse(MeshApprox, stop);
 
     // edge - flip if any pair of adjacent triangles has an obtuse dihedral
     // angle larger than or if the exterior dihedral angle is smaller than
@@ -50,7 +53,6 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
       CGAL::Euler::flip_edge(he, mesh);
     }
 
-    repairMesh(mesh);
     if (mesh.number_of_faces() < maxTolerantElementsCnt) {
       meshArray.push_back(mesh);
     }
@@ -60,37 +62,11 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
     }
   }
 
-  // render to stencil buffer
-  const int kWindowWidth = 128 * 16;
-  const int kWindowHeight = 128 * 16;
-
-  glfwInit();
-
-  GLFWwindow* window = glfwCreateWindow(kWindowWidth, kWindowHeight,
-                                        "stencil buffer", NULL, NULL);
-
-  if (window == NULL) {
-    throw std::exception("[OPENGL RENDERER]: Failed to create GLFW window");
-  }
-  glfwMakeContextCurrent(window);
-
-  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
-    throw std::exception("[OPENGL RENDERER]: Failed to initialize GLAD");
-  }
-
-  OpenGLRenderer instanceRenderer(window, kWindowWidth, kWindowHeight);
-  Shader vertexShaderInstanced =
-      readShaderFromSource("resources/shaders/shaderVertInstanced.glsl");
-  Shader fragmentShader =
-      readShaderFromSource("resources/shaders/shaderFrag.glsl");
-  instanceRenderer.addShader(ShaderType::VERTEX, vertexShaderInstanced, 0);
-  instanceRenderer.addShader(ShaderType::FRAGMENT, fragmentShader, 0);
-
   // calculate the bounding box of Mi
   int idForPoint = 0;
   Eigen::Vector3d maxCoords;
   Eigen::Vector3d minCoords;
-  for (const Kernel::Point_3& pt : Mi.points()) {
+  for (const Kernel::Point_3& pt : mesh.points()) {
     if (idForPoint == 0) {
       for (int d = 0; d < 3; d++) {
         minCoords[d] = maxCoords[d] = CGAL::to_double(pt.cartesian(d));
@@ -110,13 +86,9 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
   std::vector<SurfaceMesh> paretoSet;
   std::vector<double> visualMesure;
   for (int i = 0; i < meshArray.size(); i++) {
-    double tau = calculateTau<Kernel>(meshArray[i], Mi, l, instanceRenderer,
-                                      kWindowWidth, kWindowHeight);
+    double tau = calculateTau(meshArray[i], mesh, l);
     visualMesure.push_back(std::exp(-tau));
   }
-
-  glfwDestroyWindow(window);
-  glfwTerminate();
 
   int curIdx = 0;
   paretoSet.push_back(meshArray[0]);

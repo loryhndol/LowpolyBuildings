@@ -33,10 +33,10 @@ std::vector<LowpolyGen::SurfaceMesh> Generator::run(std::string& meshPath) {
   SurfaceMesh Mv = vhc.run(Mi);
 
   std::vector<Eigen::Vector3d> K = vhc.getViewDirections();
-  CarvedMeshGenerator cmg(K);
+  CarvedMeshGenerator cmg(K, _conf);
   SurfaceMesh Mc = cmg.run(Mi, Mv, _conf.N, _conf.epsilonTau);
 
-  std::vector<SurfaceMesh> paretoSet = calculateParetoSet(Mc);
+  std::vector<SurfaceMesh> paretoSet = calculateParetoSet(Mc, _conf.T);
   return paretoSet;
 }
 

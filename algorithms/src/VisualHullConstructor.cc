@@ -1,34 +1,6 @@
 #include "engine/VisualHullConstructor.h"
 
 namespace LowpolyGen {
-Graph::Graph(int numOfNodes) : _numOfRegions(numOfNodes) {
-  elements.assign(_numOfRegions, -1);
-}
-
-bool Graph::unite(int u, int v) {
-  u = find(u);
-  v = find(v);
-  if (u == v) {
-    return false;
-  }
-  if (elements[u] > elements[v]) {
-    std::swap(u, v);  // union by rank
-  }
-  if (elements[u] == elements[v]) {
-    --elements[u];
-  }
-  elements[v] = u;
-  --_numOfRegions;
-  return true;
-}
-
-int Graph::find(int u) {
-  if (elements[u] < 0) return u;
-  elements[u] = find(elements[u]);  // path compression
-  return elements[u];
-}
-
-int Graph::numOfNodes() { return elements.size(); }
 
 VisualHullConstructor::VisualHullConstructor(const Config& conf)
     : _conf(conf){};
@@ -68,12 +40,12 @@ SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
 
   int n = 0;
   SurfaceMesh Mv = makeBBox(Mi);
-  double tau = calculateTau(Mv, Mi);
+  double tau = calculateTau(Mv, Mi, diagonalLength);
   while (n < _conf.N) {
     int bestIdx = -1;
     double deltaTauBest = 0;
     for (int i = 0; i < P.size(); i++) {
-      double tauP = calculateTau(intersect(Mv, P[i]), Mi);
+      double tauP = calculateTau(intersect(Mv, P[i]), Mi, diagonalLength);
       double deltaTauP = tau - tauP;
       if (deltaTauP > deltaTauBest) {
         deltaTauBest = deltaTauP;
@@ -115,14 +87,16 @@ VisualHullConstructor::groupTrianglesIntoRegions(SurfaceMesh& Mi) {
   CGAL::Polygon_mesh_processing::compute_normals(Mi, vnormals, fnormals);
 
   Graph disjointSet(Mi.number_of_faces());
+
+#pragma omp parallel for
   for (size_t i = 0; i < Mi.number_of_faces(); i++) {
-    if (i == Mi.number_of_faces() - 1) {
-      printf("\rmerging planes %.2lf\n",
-             double(i) / double(Mi.number_of_faces()) * 100.0);
-    } else {
-      printf("\rmerging planes %.2lf",
-             double(i) / double(Mi.number_of_faces()) * 100.0);
-    }
+    // if (i == Mi.number_of_faces() - 1) {
+    //   printf("\rmerging planes %.2lf\n",
+    //          double(i) / double(Mi.number_of_faces()) * 100.0);
+    // } else {
+    //   printf("\rmerging planes %.2lf",
+    //          double(i) / double(Mi.number_of_faces()) * 100.0);
+    // }
 
     for (size_t j = i + 1; j < Mi.number_of_faces(); j++) {
       SurfaceMesh::Face_iterator fit1 = Mi.faces_begin() + i;

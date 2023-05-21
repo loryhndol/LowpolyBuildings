@@ -31,9 +31,10 @@ Kernel::Point_3 point2dTo3d(const Kernel::Point_2& pt2d,
   double distance = CGAL::to_double(cameraToPt3d * dir) /
                     CGAL::to_double(dir.squared_length());
   CGAL::Point_3<Kernel> projection = pt3d - distance * dir;
-  Eigen::Vector3d cameraToProjection(projection.x() - cameraPosition.x(),
-                                     projection.y() - cameraPosition.y(),
-                                     projection.z() - cameraPosition.z());
+  Eigen::Vector3d cameraToProjection(
+      CGAL::to_double(projection.x()) - cameraPosition.x(),
+      CGAL::to_double(projection.y()) - cameraPosition.y(),
+      CGAL::to_double(projection.z()) - cameraPosition.z());
   double x = cameraToProjection.dot(cameraRight) / cameraRight.norm();
   double y = cameraToProjection.dot(cameraUp) / cameraUp.norm();
   double z = cameraToProjection.dot(d) / d.norm();
@@ -95,7 +96,7 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
 
   typename CDTplus::Finite_faces_iterator ctfit;
 
-  // 如果面的重心坐标位于多边形内部，则保留
+  // save the face if its barycenter lies within the polygon
   for (ctfit = ct.finite_faces_begin(); ctfit != ct.finite_faces_end();
        ++ctfit) {
     CGAL::Vector_2<Kernel> sum(0, 0);
@@ -119,9 +120,7 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
     }
   }
 
-  // CGAL::IO::write_OBJ("tmp/mesh.obj", mesh);
-
-  double vlen = diagonalLength;
+  CGAL::IO::write_OBJ("tmp/mesh.obj", mesh);
 
   CGAL::Surface_mesh<CGAL::Point_3<Kernel>> outputMesh;
   std::vector<CGAL::Point_3<Kernel>> outputMeshVertices;
@@ -130,14 +129,16 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
   std::vector<CGAL::Point_3<Kernel>> boundary3DPoints;
 
   for (int i = 0; i < SilhouetteBoundaryAndHoles.size(); i++) {
-    boundary3DPoints.push_back(point2dTo3d(
-        SilhouetteBoundaryAndHoles[i], cameraPosition, cameraUp, cameraRight));
+    boundary3DPoints.push_back(
+        point2dTo3d(SilhouetteBoundaryAndHoles[i], cameraPosition, cameraUp,
+                    cameraRight, Eigen::Vector3d(0, 0, vlen)));
   }
 
   // generate top and bottom boundaries
   for (int i = 0; i < SilhouetteBoundaryAndHoles.size(); i++) {
     CGAL::Point_3<Kernel> pt = boundary3DPoints[i];
-    CGAL::Vector_3<Kernel> dir(d.x(), d.y(), d.z());
+    CGAL::Vector_3<Kernel> dir(cameraPosition.x(), cameraPosition.y(),
+                               cameraPosition.z());
     dir *= -2 * vlen;
 
     pt = pt.transform(
@@ -151,7 +152,8 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
 
   for (int i = 0; i < SilhouetteBoundaryAndHoles.size(); i++) {
     CGAL::Point_3<Kernel> pt = boundary3DPoints[i];
-    CGAL::Vector_3<Kernel> dir(d.x(), d.y(), d.z());
+    CGAL::Vector_3<Kernel> dir(cameraPosition.x(), cameraPosition.y(),
+                               cameraPosition.z());
     dir *= 2 * vlen;
 
     pt = pt.transform(
@@ -227,7 +229,7 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
             outputVerticeDescriptors[globalIdx + totalVerticesSize];
 
         outputMesh.add_face(indexU2, indexV2, indexW2);
-      } else {  // 注意法线方向
+      } else {
         SurfaceMesh::Vertex_index& indexU1 =
             outputVerticeDescriptors[j + totalVerticesSize];
         SurfaceMesh::Vertex_index& indexV1 =
@@ -249,11 +251,12 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
     globalIdx += holeSize;
   }
 
-  // CGAL::IO::write_OBJ("tmp/side.obj", outputMesh);
+  CGAL::IO::write_OBJ("tmp/side.obj", outputMesh);
 
   SurfaceMesh bottomMesh = mesh;  // backup for later use
   // add up faces
-  CGAL::Vector_3<Kernel> topAffVec(d.x(), d.y(), d.z());
+  CGAL::Vector_3<Kernel> topAffVec(cameraPosition.x(), cameraPosition.y(),
+                                   cameraPosition.z());
   topAffVec *= -2 * vlen;
 
   CGAL::Aff_transformation_3<Kernel> topAff(CGAL::Translation(), topAffVec);
@@ -267,7 +270,9 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
       bool vdExisted = false;
       for (int i = 0; i < totalVerticesSize; i++) {
         SurfaceMesh::Vertex_index outputVd = outputVerticeDescriptors[i];
-        if (samePoint3(mesh.point(vd), outputMesh.point(outputVd))) {
+        if (CGAL::x_equal(mesh.point(vd), outputMesh.point(outputVd)) &&
+            CGAL::y_equal(mesh.point(vd), outputMesh.point(outputVd)) &&
+            CGAL::z_equal(mesh.point(vd), outputMesh.point(outputVd))) {
           extrudedVdArray.push_back(outputVd);
           vdExisted = true;
           break;
@@ -284,10 +289,11 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
                         extrudedVdArray[2]);
   }
 
-  // CGAL::IO::write_OBJ("tmp/outputMesh.obj", outputMesh);
+  CGAL::IO::write_OBJ("tmp/outputMesh.obj", outputMesh);
 
   // add bottom mesh
-  CGAL::Vector_3<Kernel> botAffVec(d.x(), d.y(), d.z());
+  CGAL::Vector_3<Kernel> botAffVec(cameraPosition.x(), cameraPosition.y(),
+                                   cameraPosition.z());
   botAffVec *= 2 * vlen;
 
   CGAL::Aff_transformation_3<Kernel> botAff(CGAL::Translation(), botAffVec);
@@ -302,7 +308,9 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
       for (int i = totalVerticesSize; i < outputVerticeDescriptors.size();
            i++) {
         SurfaceMesh::Vertex_index outputVd = outputVerticeDescriptors[i];
-        if (samePoint3(bottomMesh.point(vd), outputMesh.point(outputVd))) {
+        if (CGAL::x_equal(bottomMesh.point(vd), outputMesh.point(outputVd)) &&
+            CGAL::y_equal(bottomMesh.point(vd), outputMesh.point(outputVd)) &&
+            CGAL::z_equal(bottomMesh.point(vd), outputMesh.point(outputVd))) {
           extrudedVdArray.push_back(outputVd);
           vdExisted = true;
           break;
@@ -314,16 +322,18 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
         extrudedVdArray.push_back(extrudedVd);
       }
     }
-    // 底面法向量与顶面法向量方向相反
+    // the normal direction at the bottom should be opposite to the top
     outputMesh.add_face(extrudedVdArray[0], extrudedVdArray[2],
                         extrudedVdArray[1]);
   }
   repairMesh(outputMesh);
-  // CGAL::IO::write_OBJ("tmp/output2.obj", outputMesh);
+  CGAL::IO::write_OBJ("tmp/output2.obj", outputMesh);
   return outputMesh;
 }
 
 SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B) { return {}; }
+
+SurfaceMesh subtract(const SurfaceMesh& A, const SurfaceMesh& B) { return {}; }
 
 SurfaceMesh makeBBox(const SurfaceMesh& Mi) {
   using vertex_descriptor = typename SurfaceMesh::Vertex_index;
@@ -369,7 +379,7 @@ SurfaceMesh makeBBox(const SurfaceMesh& Mi) {
   vertexIndexArray[7] =
       Mv.add_vertex(Kernel::Point_3(minCoords[0], maxCoords[1], maxCoords[2]));
 
-  // 右手法则表示法线朝外
+  // right-hand side rule to represent outside
   // bottom face
   Mv.add_face(vertexIndexArray[0], vertexIndexArray[3], vertexIndexArray[2]);
   Mv.add_face(vertexIndexArray[2], vertexIndexArray[1], vertexIndexArray[0]);

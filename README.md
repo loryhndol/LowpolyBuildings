@@ -26,3 +26,9 @@ cmake --build build
 cp .\build\algorithms\Debug\Engine.dll .\build\demo\Debug
 .\build\demo\Debug\demo.exe
 ```
+
+## TODO
+- subtraction
+- intersection
+- calculateParetoSet
+- testing

@@ -3,19 +3,6 @@
 #include "engine/calculateTau.h"
 
 namespace LowpolyGen {
-/**
- * 三维球面上的Marsaglia 方法，这是一种基于变换抽样的方法。
-
-step1： 随机抽样产生一对均匀分布的随机数 u ，v   ；这里u，v 在[-1,1] 范围内
-step2 ：计算  r^2 = u^2+v^2;
-　　　  如果 r^2 > 1 则重新抽样，直到满足   r^2 < 1  .
-step3 ：x=2*u*sqrt(1-r2);
-
-　　　　y=2*v*sqrt(1-r2);
-
-　　　　z=1-2*r2;
- */
-
 float get_random(unsigned int seed = 0) {
   static std::default_random_engine e(seed);
   static std::uniform_real_distribution<float> u(-1, 1);
@@ -38,9 +25,29 @@ Eigen::Vector3f getHemiSpherePoint() {
   return Eigen::Vector3f(x, y, z);
 }
 
-double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo) {
+double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l) {
   double tau = 0.0;
   constexpr int kNumOfSamples = 100;
+  int windowWidth = 128;
+  int windowHeight = 128;
+
+  glfwInit();
+  GLFWwindow* window = glfwCreateWindow(windowWidth, windowHeight,
+                                        "calculate tau", nullptr, nullptr);
+  OpenGLRenderer renderer(window, windowWidth, windowHeight);
+
+  glfwMakeContextCurrent(window);
+
+  if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress)) {
+    throw std::exception("[OPENGL RENDERER]: Failed to initialize GLAD");
+  }
+
+  Shader vertexShaderInstanced =
+      readShaderFromSource("resources/shaders/shaderVert.glsl");
+  Shader fragmentShader =
+      readShaderFromSource("resources/shaders/shaderFrag.glsl");
+  renderer.addShader(ShaderType::VERTEX, vertexShaderInstanced, 0);
+  renderer.addShader(ShaderType::FRAGMENT, fragmentShader, 0);
 
   // uniformly sample view directions on S^2(sphere)
   // for each direction, render Mi and Mo to stencil buffer
@@ -135,6 +142,8 @@ double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo) {
     tau += score;
   }
 
+  glfwDestroyWindow(window);
+  glfwTerminate();
   return tau;
 }
 }  // namespace LowpolyGen

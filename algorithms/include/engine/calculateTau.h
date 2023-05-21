@@ -8,5 +8,5 @@
 #include "renderer.h"
 
 namespace LowpolyGen {
-double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo);
+double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l);
 }  // namespace LowpolyGen

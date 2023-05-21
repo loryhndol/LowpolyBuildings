@@ -1,12 +1,13 @@
 #include "engine/CarvedMeshGenerator.h"
 
 namespace LowpolyGen {
-CarvedMeshGenerator::CarvedMeshGenerator(const std::vector<Eigen::Vector3d>& K)
-    : _K(K) {}
+CarvedMeshGenerator::CarvedMeshGenerator(const std::vector<Eigen::Vector3d>& K,
+                                         const Config& conf)
+    : _K(K), _conf(conf) {}
 
-SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
-                                            const SurfaceMesh& Mv, int N,
-                                            double epsilonTau) {
+SurfaceMesh CarvedMeshGenerator::run(const SurfaceMesh& Mi,
+                                     const SurfaceMesh& Mv, int N,
+                                     double epsilonTau) {
   using SurfaceMesh = CGAL::Surface_mesh<CGAL::Point_3<Kernel>>;
 
   // calculate bbox
@@ -31,7 +32,7 @@ SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
   double diagonalLength = (maxCoords - minCoords).norm();
 
   std::vector<SurfaceMesh> PrimitiveSet(_K.size());
-  repairMesh(Mi);
+  // repairMesh(Mi);
 
   // #pragma omp parallel for
   for (int i = 0; i < _K.size(); i++) {
@@ -63,14 +64,15 @@ SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
     S.simplify();
 
     // caculate 2D bounding box of CCW_Loop;
+    auto silhouetteArray = S.connectedLoops();
     CGAL::Bbox_2 boundingBox2D = silhouetteArray[0].bbox();
 
     double largestDiagonalLengthOfBBoxes = 0.0;
     double largestArea = 0.0;
 
-    std::vector<Polygon_with_Holes> CCW_Loops;
+    std::vector<CGAL::Polygon_with_holes_2<Kernel>> CCW_Loops;
 
-    for (Polygon_with_Holes& P : silhouetteArray) {
+    for (CGAL::Polygon_with_holes_2<Kernel>& P : silhouetteArray) {
       double diagonalLength = std::sqrt(std::pow(P.bbox().x_span(), 2) +
                                         std::pow(P.bbox().y_span(), 2));
       largestDiagonalLengthOfBBoxes =
@@ -103,9 +105,11 @@ SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
 
     CGAL::Polygon_with_holes_2<Kernel> complementPath(boundary, holesP.begin(),
                                                       holesP.end());
-
+    Eigen::Vector3d eigD(CGAL::to_double(direction.x()),
+                         CGAL::to_double(direction.y()),
+                         CGAL::to_double(direction.z()));
     SurfaceMesh extrudedMesh =
-        extrude(complementPath, direction, 0.125 * diagonalLength);
+        extrude(complementPath, eigD, 0.125 * diagonalLength);
 
     double dx = CGAL::to_double(k.x()) * 0.25 * diagonalLength;
     double dy = CGAL::to_double(k.y()) * 0.25 * diagonalLength;
@@ -133,12 +137,12 @@ SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
 
   int n = 0;
   SurfaceMesh Mc = Mv;
-  double tau = calculateTau(Mv, Mi);
+  double tau = calculateTau(Mv, Mi, diagonalLength);
   while (n < _conf.N) {
     int bestIdx = -1;
     double deltaTauBest = 0;
-    for (int i = 0; i < P.size(); i++) {
-      double tauP = calculateTau(intersect(Mv, P[i]), Mi);
+    for (int i = 0; i < PrimitiveSet.size(); i++) {
+      double tauP = calculateTau(subtract(Mc, PrimitiveSet[i]), Mi, diagonalLength);
       double deltaTauP = tau - tauP;
       if (deltaTauP > deltaTauBest) {
         deltaTauBest = deltaTauP;
@@ -147,9 +151,9 @@ SurfaceMesh CarvedMeshGenerator::operator()(const SurfaceMesh& Mi,
     }
 
     if (deltaTauBest >= _conf.epsilonTau) {
-      Mv.clear();
-      Mv = intersect(Mv, P[bestIdx]);
-      P.erase(P.begin() + bestIdx);
+      Mc.clear();
+      Mc = subtract(Mc, PrimitiveSet[bestIdx]);
+      PrimitiveSet.erase(PrimitiveSet.begin() + bestIdx);
       n += 1;
       tau = tau - deltaTauBest;
     } else {
