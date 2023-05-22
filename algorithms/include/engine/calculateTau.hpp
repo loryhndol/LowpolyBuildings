@@ -1,31 +1,19 @@
-#pragma once
+#ifndef _CALCULATE_TAU_UTIL_
+#define _CALCULATE_TAU_UTIL_
 
-#include "engine/calculateTau.h"
+#ifndef _COMMON_H_
+#include "Common.h"
+#endif  // _COMMON_H_
+
+#include <renderer.h>
+
+#include "mathUtil.h"
 
 namespace LowpolyGen {
-float get_random(unsigned int seed = 0) {
-  static std::default_random_engine e(seed);
-  static std::uniform_real_distribution<float> u(-1, 1);
-  return u(e);
-}
 
-Eigen::Vector3f getHemiSpherePoint() {
-  float u = get_random(time(NULL));
-  float v = get_random(time(NULL));
-  float r2 = u * u + v * v;
-  while (r2 >= 1) {
-    u = get_random(time(NULL));
-    v = get_random(time(NULL));
-    r2 = u * u + v * v;
-  }
-  float z = std::sqrt(1 - r2);
-  float phi = 2 * M_PI * u;
-  float x = std::cos(phi) * std::sqrt(r2);
-  float y = std::sin(phi) * std::sqrt(r2);
-  return Eigen::Vector3f(x, y, z);
-}
-
-double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l) {
+template <typename K1, typename K2>
+double calculateTau(const CGAL::Surface_mesh<CGAL::Point_3<K1>>& Mi,
+                    const CGAL::Surface_mesh<CGAL::Point_3<K2>>& Mo, double l) {
   double tau = 0.0;
   constexpr int kNumOfSamples = 100;
   int windowWidth = 128;
@@ -58,11 +46,12 @@ double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l) {
   std::vector<Eigen::Vector3f> MiVerts;
   std::vector<Eigen::Vector3f> MoVerts;
 
-  typename SurfaceMesh::Halfedge_iterator hit;
-  for (hit = Mi.halfedges_begin(); hit != Mi.halfedges_end(); ++hit) {
-    for (typename SurfaceMesh::Vertex_index vd :
-         Mi.vertices_around_face(*hit)) {
-      CGAL::Point_3<Kernel> pt = Mi.point(vd);
+  CGAL::Surface_mesh<CGAL::Point_3<K1>>::Halfedge_iterator hitForMi;
+  for (hitForMi = Mi.halfedges_begin(); hitForMi != Mi.halfedges_end();
+       ++hitForMi) {
+    for (CGAL::Surface_mesh<CGAL::Point_3<K1>>::Vertex_index vd :
+         Mi.vertices_around_face(*hitForMi)) {
+      CGAL::Point_3<K1> pt = Mi.point(vd);
       float x = static_cast<float>(CGAL::to_double(pt.x()));
       float y = static_cast<float>(CGAL::to_double(pt.y()));
       float z = static_cast<float>(CGAL::to_double(pt.z()));
@@ -71,10 +60,12 @@ double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l) {
     }
   }
 
-  for (hit = Mo.halfedges_begin(); hit != Mo.halfedges_end(); ++hit) {
-    for (typename SurfaceMesh::Vertex_index vd :
-         Mo.vertices_around_face(*hit)) {
-      CGAL::Point_3<Kernel> pt = Mo.point(vd);
+  CGAL::Surface_mesh<CGAL::Point_3<K2>>::Halfedge_iterator hitForMo;
+  for (hitForMo = Mo.halfedges_begin(); hitForMo != Mo.halfedges_end();
+       ++hitForMo) {
+    for (CGAL::Surface_mesh<CGAL::Point_3<K2>>::Vertex_index vd :
+         Mo.vertices_around_face(*hitForMo)) {
+      CGAL::Point_3<K2> pt = Mo.point(vd);
       float x = static_cast<float>(CGAL::to_double(pt.x()));
       float y = static_cast<float>(CGAL::to_double(pt.y()));
       float z = static_cast<float>(CGAL::to_double(pt.z()));
@@ -147,3 +138,4 @@ double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l) {
   return tau;
 }
 }  // namespace LowpolyGen
+#endif

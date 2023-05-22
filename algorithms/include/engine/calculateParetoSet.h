@@ -9,7 +9,7 @@
 #include <CGAL/Surface_mesh_simplification/edge_collapse.h>
 
 #include "PolygonMeshProcessing.h"
-#include "calculateTau.h"
+#include "calculateTau.hpp"
 #include "renderer.h"
 
 namespace LowpolyGen {

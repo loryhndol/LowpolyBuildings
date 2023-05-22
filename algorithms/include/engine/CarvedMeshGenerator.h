@@ -9,7 +9,7 @@
 
 #include "PolygonMeshProcessing.h"
 #include "Silhouette.h"
-#include "calculateTau.h"
+#include "calculateTau.hpp"
 
 namespace LowpolyGen {
 

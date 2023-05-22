@@ -10,7 +10,7 @@
 #include "CarvedMeshGenerator.h"
 #include "VisualHullConstructor.h"
 #include "calculateParetoSet.h"
-#include "calculateTau.h"
+#include "calculateTau.hpp"
 
 namespace LowpolyGen {
 SurfaceMesh readMeshFromOBJ(const std::string& OBJPath);

@@ -5,8 +5,8 @@
 #endif  // _COMMON_H_
 #include <random>
 
-#include "renderer.h"
-
 namespace LowpolyGen {
-double calculateTau(const SurfaceMesh& Mi, const SurfaceMesh& Mo, double l);
+float get_random(unsigned int seed = 0);
+
+Eigen::Vector3f getHemiSpherePoint();
 }  // namespace LowpolyGen

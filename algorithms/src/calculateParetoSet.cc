@@ -1,39 +1,42 @@
 #include "engine/calculateParetoSet.h"
 
 namespace LowpolyGen {
-std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
-    const LowpolyGen::SurfaceMesh& mesh, int maxTolerantElementsCnt) {
+std::vector<SurfaceMesh> calculateParetoSet(const SurfaceMesh& mesh,
+                                            int maxTolerantElementsCnt) {
   auto MeshApprox =
       convertSurfaceMeshKernel<Kernel, CGAL::Simple_cartesian<double>>(mesh);
 
-  std::vector<SurfaceMesh> meshArray;
-
+  // the following code operates on the precision
+  // `CGAL::Simple_cartesian<double>`
+  using KernelApprox = CGAL::Simple_cartesian<double>;
+  using SurfaceMeshApprox = CGAL::Surface_mesh<KernelApprox::Point_3>;
+  std::vector<SurfaceMeshApprox> meshArray;
   while (MeshApprox.number_of_faces() > 4) {
     // keep 90% of edges
     double stop_ratio = 0.9;
     CGAL::Surface_mesh_simplification::Count_ratio_stop_predicate<
-        CGAL::Surface_mesh<CGAL::Simple_cartesian<double>::Point_3>>
+        SurfaceMeshApprox>
         stop(stop_ratio);
 
     int r = CGAL::Surface_mesh_simplification::edge_collapse(MeshApprox, stop);
 
     // edge - flip if any pair of adjacent triangles has an obtuse dihedral
     // angle larger than or if the exterior dihedral angle is smaller than
-    // typename SurfaceMesh::edge_iterator eit;
 
-    std::vector<typename SurfaceMesh::Halfedge_index> toBeFlipped;
+    std::vector<SurfaceMeshApprox::Halfedge_index> toBeFlipped;
 
-    typename SurfaceMesh::halfedge_iterator hit;
-    for (hit = mesh.halfedges_begin(); hit != mesh.halfedges_end(); ++hit) {
-      typename SurfaceMesh::Halfedge_index oppositeHe = mesh.opposite(*hit);
+    SurfaceMeshApprox::halfedge_iterator hit;
+    for (hit = MeshApprox.halfedges_begin(); hit != MeshApprox.halfedges_end();
+         ++hit) {
+      SurfaceMeshApprox::Halfedge_index oppositeHe = MeshApprox.opposite(*hit);
 
       // calculate dihedral angle with normals
-      CGAL::Vector_3<Kernel> n1 =
-          CGAL::Polygon_mesh_processing::compute_face_normal(mesh.face(*hit),
-                                                             mesh);
-      CGAL::Vector_3<Kernel> n2 =
+      CGAL::Vector_3<KernelApprox> n1 =
           CGAL::Polygon_mesh_processing::compute_face_normal(
-              mesh.face(oppositeHe), mesh);
+              MeshApprox.face(*hit), MeshApprox);
+      CGAL::Vector_3<KernelApprox> n2 =
+          CGAL::Polygon_mesh_processing::compute_face_normal(
+              MeshApprox.face(oppositeHe), MeshApprox);
 
       double n1Length = std::sqrt(CGAL::to_double(n1.squared_length()));
       double n2Length = std::sqrt(CGAL::to_double(n2.squared_length()));
@@ -50,11 +53,11 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
     }
 
     for (auto& he : toBeFlipped) {
-      CGAL::Euler::flip_edge(he, mesh);
+      CGAL::Euler::flip_edge(he, MeshApprox);
     }
 
-    if (mesh.number_of_faces() < maxTolerantElementsCnt) {
-      meshArray.push_back(mesh);
+    if (MeshApprox.number_of_faces() < maxTolerantElementsCnt) {
+      meshArray.push_back(MeshApprox);
     }
 
     if (r == 0) {
@@ -66,7 +69,7 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
   int idForPoint = 0;
   Eigen::Vector3d maxCoords;
   Eigen::Vector3d minCoords;
-  for (const Kernel::Point_3& pt : mesh.points()) {
+  for (const KernelApprox::Point_3& pt : MeshApprox.points()) {
     if (idForPoint == 0) {
       for (int d = 0; d < 3; d++) {
         minCoords[d] = maxCoords[d] = CGAL::to_double(pt.cartesian(d));
@@ -83,7 +86,7 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
 
   double l = (maxCoords - minCoords).norm();
 
-  std::vector<SurfaceMesh> paretoSet;
+  std::vector<SurfaceMeshApprox> paretoSet;
   std::vector<double> visualMesure;
   for (int i = 0; i < meshArray.size(); i++) {
     double tau = calculateTau(meshArray[i], mesh, l);
@@ -99,7 +102,14 @@ std::vector<LowpolyGen::SurfaceMesh> calculateParetoSet(
     }
   }
 
-  return paretoSet;
+  std::vector<SurfaceMesh> retArray;
+  for (auto& m : meshArray) {
+    auto retMesh =
+        convertSurfaceMeshKernel<CGAL::Simple_cartesian<double>, Kernel>(m);
+    retArray.push_back(retMesh);
+  }
+
+  return retArray;
 }
 
 }  // namespace LowpolyGen
