@@ -10,7 +10,6 @@
 #include "mathUtil.h"
 
 namespace LowpolyGen {
-
 template <typename K1, typename K2>
 double calculateTau(const CGAL::Surface_mesh<CGAL::Point_3<K1>>& Mi,
                     const CGAL::Surface_mesh<CGAL::Point_3<K2>>& Mo, double l) {
@@ -100,7 +99,7 @@ double calculateTau(const CGAL::Surface_mesh<CGAL::Point_3<K1>>& Mi,
     Camera camera(toRadians(46), windowWidth / windowHeight, 0.01, 1000);
     Eigen::Vector3f ds = pointsOnSphere[cnt];
 
-    // camera up 定义为与旋转轴平行
+    // camera up is parallel to the rotation axis
     Eigen::Vector3f beforeRotation(0, 0, 1);
     Eigen::Vector3f cameraUp = ds.cross(beforeRotation);
     cameraUp.normalize();
@@ -137,5 +136,6 @@ double calculateTau(const CGAL::Surface_mesh<CGAL::Point_3<K1>>& Mi,
   glfwTerminate();
   return tau;
 }
+
 }  // namespace LowpolyGen
 #endif

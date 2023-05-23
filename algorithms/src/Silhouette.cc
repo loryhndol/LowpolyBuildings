@@ -14,7 +14,7 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
       Mi.property_map<SurfaceMesh::Face_index, Kernel::Vector_3>("f:normals")
           .first;
 
-  std::list<CGAL::Polygon_2<Kernel>> polygonList;
+  std::list<CGAL::Polygon_with_holes_2<Kernel>> polygonList;
   for (SurfaceMesh::Face_index fd : Mi.faces()) {
     Kernel::Vector_3 normal = fnormals[fd];
     if (CGAL::angle(translate(modelOrigin, normal), modelOrigin, r) ==
@@ -23,6 +23,7 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
     }
 
     CGAL::Polygon_2<Kernel> polygon;
+    
     // Go over the facet vertices and project them
     for (SurfaceMesh::Vertex_index vd :
          Mi.vertices_around_face(Mi.halfedge(fd))) {
@@ -35,7 +36,8 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
     }
 
     if (polygon.is_simple() && polygon.size() >= 3) {
-      polygonList.push_back(polygon);
+      CGAL::Polygon_with_holes_2<Kernel> pwh(polygon);
+      polygonList.push_back(pwh);
     }
   }
 
@@ -44,7 +46,8 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
   //   for (auto pt : poly.vertices()) {
   //     std::cout << pt.x() << " " << pt.y() << " ";
   //   }
-  std::cout << std::endl;
+  //   std::cout << std::endl;
+  // }
   CGAL::join(polygonList.begin(), polygonList.end(),
              std::back_inserter(_silhouette2D));
 }

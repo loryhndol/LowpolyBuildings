@@ -331,9 +331,35 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
   return outputMesh;
 }
 
-SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B) { return {}; }
+SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B) {
+  if (CGAL::Polygon_mesh_processing::does_self_intersect(A)) {
+    std::cout << "mesh A is self intersecting." << std::endl;
+  }
+  if (CGAL::Polygon_mesh_processing::does_self_intersect(B)) {
+    std::cout << "mesh B is self intersecting." << std::endl;
+  }
+  SurfaceMesh cut = A;
+  SurfaceMesh target = B;
+  SurfaceMesh result;
+  CGAL::Polygon_mesh_processing::corefine_and_compute_intersection(cut, target,
+                                                                   result);
+  return result;
+}
 
-SurfaceMesh subtract(const SurfaceMesh& A, const SurfaceMesh& B) { return {}; }
+SurfaceMesh subtract(const SurfaceMesh& A, const SurfaceMesh& B) {
+  if (CGAL::Polygon_mesh_processing::does_self_intersect(A)) {
+    std::cout << "mesh A is self intersecting." << std::endl;
+  }
+  if (CGAL::Polygon_mesh_processing::does_self_intersect(B)) {
+    std::cout << "mesh B is self intersecting." << std::endl;
+  }
+  SurfaceMesh cut = A;
+  SurfaceMesh target = B;
+  SurfaceMesh result;
+  CGAL::Polygon_mesh_processing::corefine_and_compute_difference(cut, target,
+                                                                 result);
+  return result;
+}
 
 SurfaceMesh makeBBox(const SurfaceMesh& Mi) {
   using vertex_descriptor = typename SurfaceMesh::Vertex_index;

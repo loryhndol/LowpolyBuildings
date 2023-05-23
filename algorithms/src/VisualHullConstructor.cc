@@ -236,22 +236,22 @@ std::vector<WeightedVector> VisualHullConstructor::fitPlanesFromRegions(
       if (sumOfArea < 1e-15) {
         continue;
       }
-      X /= sumOfArea;
-
-      Eigen::MatrixXd rhs = sumOfArea * X * X.transpose();
-
-      Eigen::MatrixXd result = lhs - rhs;
-
-      Eigen::EigenSolver<Eigen::MatrixXd> es(result);
-
-      Eigen::VectorXd eigenValues = es.pseudoEigenvalueMatrix().diagonal();
-      Eigen::MatrixXd eigenVectors = es.pseudoEigenvectors();
-      EigenVectorOfSmallestEigenValue(eigenValues, eigenVectors);
-
-      Eigen::Vector3d N = eigenVectors.col(0);
-      WeightedVector dir(N, sumOfArea);
-      weightedViewDirections.push_back(dir);
     }
+    X /= sumOfArea;
+
+    Eigen::MatrixXd rhs = sumOfArea * X * X.transpose();
+
+    Eigen::MatrixXd result = lhs - rhs;
+
+    Eigen::EigenSolver<Eigen::MatrixXd> es(result);
+
+    Eigen::VectorXd eigenValues = es.pseudoEigenvalueMatrix().diagonal();
+    Eigen::MatrixXd eigenVectors = es.pseudoEigenvectors();
+    EigenVectorOfSmallestEigenValue(eigenValues, eigenVectors);
+
+    Eigen::Vector3d N = eigenVectors.col(0);
+    WeightedVector dir(N, sumOfArea);
+    weightedViewDirections.push_back(dir);
   }
   return weightedViewDirections;
 }

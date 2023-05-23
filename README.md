@@ -28,7 +28,6 @@ cp .\build\algorithms\Debug\Engine.dll .\build\demo\Debug
 ```
 
 ## TODO
-- subtraction
-- intersection
 - calculateParetoSet
 - testing
+- fix the error when generate `Engine.dll`: `fatal error LNK1189: library limit of 65535 objects exceeded`
