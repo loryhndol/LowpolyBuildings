@@ -15,7 +15,7 @@
 namespace LowpolyGen {
 SurfaceMesh readMeshFromOBJ(const std::string& OBJPath);
 
-class Generator {
+class __declspec(dllexport) Generator {
  private:
   const Config& _conf;
 

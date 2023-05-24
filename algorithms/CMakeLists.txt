@@ -8,8 +8,6 @@ find_package(CGAL REQUIRED)
 find_package(Eigen3 REQUIRED NO_MODULE)
 
 file(GLOB LIB_SOURCE src/*.cc src/*.hpp)
-file(GLOB LIB_HDRS include/engine/*.h)
-set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS ON)
 add_library(Engine SHARED ${LIB_SOURCE})
 
 include_directories(include)

@@ -14,7 +14,7 @@ namespace LowpolyGen {
 using Kernel = CGAL::Exact_predicates_exact_constructions_kernel;
 using SurfaceMesh = CGAL::Surface_mesh<CGAL::Point_3<Kernel>>;
 
-struct Config {
+struct __declspec(dllexport) Config {
   int N;
   int T;
   int k;
