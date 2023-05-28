@@ -2,43 +2,87 @@
 
 namespace LowpolyGen {
 
-bool WithinSilhouette(const Kernel::Point_2& pt,
-                      const CGAL::Polygon_with_holes_2<Kernel>& silhouette) {
-  if (silhouette.outer_boundary().bounded_side(pt) == CGAL::ON_BOUNDED_SIDE) {
-    return true;
-  }
-  for (auto hole = silhouette.holes_begin(); hole != silhouette.holes_end();
-       ++hole) {
-    if (hole->bounded_side(pt) == CGAL::ON_BOUNDED_SIDE) {
-      return true;
+// 射线法 https://blog.csdn.net/WilliamSun0122/article/details/77994526
+// 三态函数，判断两个double在eps精度下的大小关系
+int dcmp(double x) {
+  if (fabs(x) < 1e-8)
+    return 0;
+  else
+    return x < 0 ? -1 : 1;
+}
+
+// 判断点P在多边形内-射线法
+//  这里做了简化，因为三角形的重心坐标一般不会落在三角形的某条边上
+bool InPolygon(const CGAL::Point_2<Kernel>& P,
+               const CGAL::Polygon_2<Kernel>& poly) {
+  bool flag = false;             // 相当于计数
+  CGAL::Point_2<Kernel> P1, P2;  // 多边形一条边的两个顶点
+  int n = poly.size() - 1;
+  for (int i = 0, j = n; i <= n; j = i++) {
+    // polygon[]是给出多边形的顶点
+    P1 = poly[i];
+    P2 = poly[j];
+    // 前一个判断min(P1.y,P2.y)<P.y<=max(P1.y,P2.y)
+    // 后一个判断被测点 在 射线与边交点 的左边
+
+    if ((dcmp(CGAL::to_double(P1.y().exact() - P.y().exact())) > 0 !=
+         dcmp(CGAL::to_double(P2.y().exact() - P.y().exact())) > 0) &&
+        dcmp(CGAL::to_double(P.x().exact() -
+                             (P.y().exact() - P1.y().exact()) *
+                                 (P1.x().exact() - P2.x().exact()) /
+                                 (P1.y().exact() - P2.y().exact()) -
+                             P1.x().exact())) < 0) {
+      flag = !flag;
     }
   }
+  return flag;
+}
+
+/**
+ * .
+ *
+ * \param pt barycenter of a triagle
+ * \param polygonsWithHoles Outer boundaries and inner boundaries of the
+ * silhouette \return
+ */
+bool WithinSilhouette(const Kernel::Point_2& pt,
+                      CGAL::Polygon_with_holes_2<Kernel>& polygonWithHoles) {
+  bool inOuterBoundary = false;
+  const CGAL::Polygon_2<Kernel>& poly = polygonWithHoles.outer_boundary();
+
+  if (InPolygon(pt, poly)) {
+    inOuterBoundary = true;
+  }
+
+  bool InHole = false;
+  typename CGAL::Polygon_with_holes_2<Kernel>::Hole_const_iterator hit;
+  for (hit = polygonWithHoles.holes_begin();
+       hit != polygonWithHoles.holes_end(); ++hit) {
+    const CGAL::Polygon_2<Kernel>& hole = *hit;
+    if (InPolygon(pt, hole)) {
+      InHole = true;
+    }
+  }
+
+  if (inOuterBoundary && !InHole) {
+    return true;
+  }
+
   return false;
 }
 
-Kernel::Point_3 point2dTo3d(const Kernel::Point_2& pt2d,
+Kernel::Point_3 point2dTo3d(const CGAL::Point_2<Kernel>& point,
                             const Eigen::Vector3d& cameraPosition,
                             const Eigen::Vector3d& cameraUp,
-                            const Eigen::Vector3d& cameraRight,
-                            const Eigen::Vector3d& d) {
-  CGAL::Vector_3<Kernel> dir(d.x(), d.y(), d.z());
-  CGAL::Point_3<Kernel> origin(0, 0, 0);
-  CGAL::Plane_3<Kernel> plane(origin, dir);
-  CGAL::Point_3<Kernel> pt3d(pt2d.x(), pt2d.y(), 0);
-  CGAL::Vector_3<Kernel> cameraToPt3d(pt3d.x() - cameraPosition.x(),
-                                      pt3d.y() - cameraPosition.y(),
-                                      pt3d.z() - cameraPosition.z());
-  double distance = CGAL::to_double(cameraToPt3d * dir) /
-                    CGAL::to_double(dir.squared_length());
-  CGAL::Point_3<Kernel> projection = pt3d - distance * dir;
-  Eigen::Vector3d cameraToProjection(
-      CGAL::to_double(projection.x()) - cameraPosition.x(),
-      CGAL::to_double(projection.y()) - cameraPosition.y(),
-      CGAL::to_double(projection.z()) - cameraPosition.z());
-  double x = cameraToProjection.dot(cameraRight) / cameraRight.norm();
-  double y = cameraToProjection.dot(cameraUp) / cameraUp.norm();
-  double z = cameraToProjection.dot(d) / d.norm();
-  return Kernel::Point_3(x, y, z);
+                            const Eigen::Vector3d& cameraRight) {
+  // 经过extract Silhouette后得到的坐标范围从0开始
+  // 根据extract Silhouette代码来确定方向
+  double ux = CGAL::to_double(point.x().exact());
+  double uy = CGAL::to_double(point.y().exact());
+  Eigen::Vector3d pt =
+      ux * cameraRight.normalized() + uy * cameraUp.normalized();
+
+  return Kernel::Point_3(pt.x(), pt.y(), pt.z());
 }
 
 SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
@@ -111,8 +155,8 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
       std::vector<SurfaceMesh::Vertex_index> indexArray;
       for (int cnt = 0; cnt < 3; cnt++) {
         CGAL::Point_2<Kernel>& u = ctfit->vertex(cnt)->point();
-        CGAL::Point_3<Kernel> pt = point2dTo3d(
-            u, cameraPosition, cameraUp, cameraRight, Eigen::Vector3d(0, 0, 0));
+        CGAL::Point_3<Kernel> pt =
+            point2dTo3d(u, cameraPosition, cameraUp, cameraRight);
         SurfaceMesh::Vertex_index index = mesh.add_vertex(pt);
         indexArray.push_back(index);
       }
@@ -129,9 +173,8 @@ SurfaceMesh extrude(CGAL::Polygon_with_holes_2<Kernel>& Path2D,
   std::vector<CGAL::Point_3<Kernel>> boundary3DPoints;
 
   for (int i = 0; i < SilhouetteBoundaryAndHoles.size(); i++) {
-    boundary3DPoints.push_back(
-        point2dTo3d(SilhouetteBoundaryAndHoles[i], cameraPosition, cameraUp,
-                    cameraRight, Eigen::Vector3d(0, 0, vlen)));
+    boundary3DPoints.push_back(point2dTo3d(
+        SilhouetteBoundaryAndHoles[i], cameraPosition, cameraUp, cameraRight));
   }
 
   // generate top and bottom boundaries

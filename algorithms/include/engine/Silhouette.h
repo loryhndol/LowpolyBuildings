@@ -3,11 +3,16 @@
 #ifndef _COMMON_H_
 #include "Common.h"
 #endif  // _COMMON_H_
+#include <CGAL/Arrangement_2.h>
+#include <CGAL/Boolean_set_operations_2.h>
 
-#include <CGAL/Boolean_set_operations_2.h>  // CGAL::join
+// Polyhedron mesh
+#include <CGAL/IO/Gps_iostream.h>
 #include <CGAL/Polygon_2.h>
+#include <CGAL/Polygon_mesh_processing/compute_normal.h>
 #include <CGAL/Polygon_with_holes_2.h>
 #include <CGAL/Polyline_simplification_2/simplify.h>
+#include <CGAL/Surface_mesh.h>
 
 #include <list>
 
@@ -18,6 +23,8 @@ namespace LowpolyGen {
 class Silhouette {
  private:
   std::vector<CGAL::Polygon_with_holes_2<Kernel>> _silhouette2D;
+  Eigen::Vector3d _cameraUp;
+  Eigen::Vector3d _cameraRight;
 
  public:
   /**
@@ -29,8 +36,8 @@ class Silhouette {
    * the plane perpendicular to the direction
    *
    */
-  Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
-             double diagonalLength);
+  Silhouette(const SurfaceMesh& Mi, const Kernel::Point_3& origin,
+             Kernel::Vector_3& direction, double l);
   void simplify();
   std::vector<CGAL::Polygon_with_holes_2<Kernel>> connectedLoops();
 };

@@ -1,33 +1,92 @@
 #include "engine/Silhouette.h"
 
 namespace LowpolyGen {
-Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
-                       double diagonalLength) {
-  Kernel::Compare_z_3 cmp_z{};
-  Kernel::Construct_projected_xy_point_2 proj{};
+/**
+ * Adapted from The book `CGAL Arrangement and their applications`
+ * Section 8.4 Application: Obtaining Silhouettes of Polyhedra.
+ *
+ * \param direction
+ * The function will project the surfaceMesh mesh onto
+ * the plane perpendicular to the direction
+ *
+ * \param Mi Source Surface_Mesh
+ *
+ * \return Polygon_set
+ * The silhouette contains outer boundary and inner holes,
+ * which represented as a surfaceMesh set
+ *
+ */
+Silhouette::Silhouette(const SurfaceMesh& Mi, const Kernel::Point_3& origin,
+                       Kernel::Vector_3& direction, double l) {
+  Eigen::Vector3d d(CGAL::to_double(origin.x()), CGAL::to_double(origin.y()),
+                    CGAL::to_double(origin.z()));
+  Eigen::Vector3d cameraPosition = d;
+  Eigen::Vector3d cameraOldPosition(0, 0, 3 * l);
+  // camera up 定义为与旋转轴平行
+  Eigen::Vector3d beforeRotation(0, 0, 1);
+  Eigen::Vector3d cameraUp = cameraOldPosition.cross(cameraPosition);
+  cameraUp.normalize();
+  Eigen::Vector3d cameraRight = cameraPosition.cross(cameraUp);
+  cameraRight.normalize();
+
+  using Polygon = CGAL::Polygon_2<Kernel>;
+
+  // Go over the surfaceMesh facets and project them onto the plane
+  std::list<Polygon> polygons;
+
+  typename Kernel::Compare_z_3 cmp_z{};
+  typename Kernel::Construct_projected_xy_point_2 proj{};
   typename Kernel::Construct_translated_point_3 translate{};
   typename Kernel::Point_3 modelOrigin(CGAL::ORIGIN);
+  // typename Kernel::Plane_3 plane = kernel.construct_plane_3_object()(origin,
+  // direction);
   typename Kernel::Plane_3 plane(modelOrigin, direction);
+  // typename Kernel::Point_3 r = translate(origin, direction.vector());
   typename Kernel::Point_3 r = translate(modelOrigin, direction);
 
-  auto fnormals =
-      Mi.property_map<SurfaceMesh::Face_index, Kernel::Vector_3>("f:normals")
-          .first;
+  typename SurfaceMesh::Face_iterator fit;
 
-  std::list<CGAL::Polygon_with_holes_2<Kernel>> polygonList;
-  for (SurfaceMesh::Face_index fd : Mi.faces()) {
-    Kernel::Vector_3 normal = fnormals[fd];
+  // https://www.cnblogs.com/nobodyzhou/p/6145030.html
+  std::vector<int> shouldOutput(Mi.number_of_faces(), 0);
+  std::vector<Polygon> tobeOutput(Mi.number_of_faces());
+
+  for (int i = 0; i < Mi.number_of_faces(); i++) {
+    typename SurfaceMesh::Face_iterator fit = Mi.faces_begin() + i;
+    CGAL::Vector_3<Kernel> normal =
+        CGAL::Polygon_mesh_processing::compute_face_normal(*fit, Mi);
     if (CGAL::angle(translate(modelOrigin, normal), modelOrigin, r) ==
         CGAL::RIGHT) {
       continue;
     }
 
-    CGAL::Polygon_2<Kernel> polygon;
-    
     // Go over the facet vertices and project them
-    for (SurfaceMesh::Vertex_index vd :
-         Mi.vertices_around_face(Mi.halfedge(fd))) {
-      polygon.push_back(proj(plane, Mi.point(vd)));
+
+    Eigen::Vector3d n(CGAL::to_double(direction.x()),
+                      CGAL::to_double(direction.y()),
+                      CGAL::to_double(direction.z()));
+    Eigen::Vector3d O(CGAL::to_double(modelOrigin.x()),
+                      CGAL::to_double(modelOrigin.y()),
+                      CGAL::to_double(modelOrigin.z()));
+
+    const double constant1 = n.dot(O);
+    const double constant2 = n.squaredNorm();
+
+    Polygon polygon;
+
+    for (typename SurfaceMesh::Vertex_index vd :
+         Mi.vertices_around_face(Mi.halfedge(*fit))) {
+      const CGAL::Point_3<Kernel>& point = Mi.point(vd);
+      Eigen::Vector3d v(CGAL::to_double(point.x()), CGAL::to_double(point.y()),
+                        CGAL::to_double(point.z()));
+
+      double t = (constant1 - n.dot(v)) / constant2;
+
+      Eigen::Vector3d projectedV = v + n * t;
+
+      double upComponent = projectedV.dot(cameraUp);
+      double rightComponent = projectedV.dot(cameraRight);
+
+      polygon.push_back(CGAL::Point_2<Kernel>(rightComponent, upComponent));
     }
 
     if (CGAL::angle(translate(modelOrigin, normal), modelOrigin, r) ==
@@ -36,20 +95,23 @@ Silhouette::Silhouette(const SurfaceMesh& Mi, Kernel::Vector_3& direction,
     }
 
     if (polygon.is_simple() && polygon.size() >= 3) {
-      CGAL::Polygon_with_holes_2<Kernel> pwh(polygon);
-      polygonList.push_back(pwh);
+      tobeOutput[i] = polygon;
+      shouldOutput[i] = 1;
     }
   }
 
-  // for (auto poly : polygonList) {
-  //   std::cout << "M ";
-  //   for (auto pt : poly.vertices()) {
-  //     std::cout << pt.x() << " " << pt.y() << " ";
-  //   }
-  //   std::cout << std::endl;
-  // }
-  CGAL::join(polygonList.begin(), polygonList.end(),
-             std::back_inserter(_silhouette2D));
+  for (int i = 0; i < shouldOutput.size(); i++) {
+    if (shouldOutput[i] != 0) {
+      polygons.push_back(tobeOutput[i]);
+    }
+  }
+
+  std::vector<CGAL::Polygon_with_holes_2<Kernel>> silhouetteArray;
+  CGAL::join(polygons.begin(), polygons.end(),
+             std::back_inserter(silhouetteArray));
+  _cameraUp = cameraUp;
+  _cameraRight = cameraRight;
+  _silhouette2D = silhouetteArray;
 }
 
 void Silhouette::simplify() {

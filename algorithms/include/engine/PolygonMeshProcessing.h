@@ -9,6 +9,7 @@
 
 // repair mesh
 #include <CGAL/Aff_transformation_3.h>
+#include <CGAL/Polygon_mesh_processing/corefinement.h>
 #include <CGAL/Polygon_mesh_processing/internal/repair_extra.h>
 #include <CGAL/Polygon_mesh_processing/orient_polygon_soup.h>
 #include <CGAL/Polygon_mesh_processing/polygon_mesh_to_polygon_soup.h>
@@ -19,7 +20,6 @@
 #include <CGAL/Polygon_mesh_processing/self_intersections.h>
 #include <CGAL/Polygon_mesh_processing/transform.h>
 #include <CGAL/Polygon_mesh_processing/triangulate_faces.h>
-#include <CGAL/Polygon_mesh_processing/corefinement.h>
 
 namespace LowpolyGen {
 
@@ -35,6 +35,11 @@ SurfaceMesh intersect(const SurfaceMesh& A, const SurfaceMesh& B);
 SurfaceMesh subtract(const SurfaceMesh& A, const SurfaceMesh& B);
 
 SurfaceMesh makeBBox(const SurfaceMesh& Mi);
+
+int dcmp(double x);
+
+bool InPolygon(const CGAL::Point_2<Kernel>& P,
+               const CGAL::Polygon_2<Kernel>& poly);
 
 bool WithinSilhouette(const Kernel::Point_2& pt,
                       const CGAL::Polygon_with_holes_2<Kernel>& silhouette);

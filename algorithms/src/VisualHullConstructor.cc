@@ -29,9 +29,14 @@ SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
 
   double diagonalLength = (maxCoords - minCoords).norm();
 
-  for (Eigen::Vector3d& d : _topKDirections) {
-    Kernel::Vector_3 direction(d.x(), d.y(), d.z());
-    Silhouette S(Mi, direction, diagonalLength);
+#pragma omp parallel for
+  for (int id = 0; id < _topKDirections.size(); id++) {
+    Eigen::Vector3d& d = _topKDirections[id];
+    Kernel::Vector_3 direction(-d.x(), -d.y(), -d.z());
+    Kernel::Point_3 origin{d.x() * 3 * diagonalLength,
+                           d.y() * 3 * diagonalLength,
+                           d.z() * 3 * diagonalLength};
+    Silhouette S(Mi, origin, direction, diagonalLength);
     S.simplify();
     for (auto& L : S.connectedLoops()) {
       P.push_back(extrude(L, d, diagonalLength));
@@ -171,8 +176,8 @@ std::vector<WeightedVector> VisualHullConstructor::fitPlanesFromRegions(
 
     double sumOfArea = 0;
     std::vector<double> areaOfTriangles;
-    // the eigenvector corresponding to the smallest eigenvalue of the following
-    // matrix
+    // the eigenvector corresponding to the smallest eigenvalue of the
+    // following matrix
     Eigen::MatrixXd lhs = Eigen::MatrixXd::Zero(3, 3);
 
     std::vector<int> faceIndexArray = regions.at(areaRoot);
@@ -339,10 +344,10 @@ std::vector<Eigen::Vector3d> VisualHullConstructor::generateViewDirections(
     }
   }
 
-  // Finally, we associate a weight with each view direction in D, which equals
-  // to the sum of areas of the two planar regions. Therefore, we sort the view
-  // directions by their weightsand pick the top k directions as the final
-  // direction set.
+  // Finally, we associate a weight with each view direction in D, which
+  // equals to the sum of areas of the two planar regions. Therefore, we sort
+  // the view directions by their weightsand pick the top k directions as the
+  // final direction set.
   std::priority_queue<WeightedVector, std::vector<WeightedVector>,
                       std::greater<>>
       pqForWeightedViewDirection;

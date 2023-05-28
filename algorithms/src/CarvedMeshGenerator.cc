@@ -60,7 +60,7 @@ SurfaceMesh CarvedMeshGenerator::run(const SurfaceMesh& Mi,
     CGAL::Polygon_mesh_processing::clip(newMi, plane,
                                         CGAL::parameters::clip_volume(true));
 
-    Silhouette S(newMi, direction, diagonalLength);
+    Silhouette S(newMi, origin, direction, diagonalLength);
     S.simplify();
 
     // caculate 2D bounding box of CCW_Loop;
@@ -142,7 +142,8 @@ SurfaceMesh CarvedMeshGenerator::run(const SurfaceMesh& Mi,
     int bestIdx = -1;
     double deltaTauBest = 0;
     for (int i = 0; i < PrimitiveSet.size(); i++) {
-      double tauP = calculateTau(subtract(Mc, PrimitiveSet[i]), Mi, diagonalLength);
+      double tauP =
+          calculateTau(subtract(Mc, PrimitiveSet[i]), Mi, diagonalLength);
       double deltaTauP = tau - tauP;
       if (deltaTauP > deltaTauBest) {
         deltaTauBest = deltaTauP;
