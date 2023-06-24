@@ -135,11 +135,16 @@ SurfaceMesh CarvedMeshGenerator::run(const SurfaceMesh& Mi,
     CGAL::IO::write_OBJ("tmp/carvedP_" + idx + ".obj", PrimitiveSet[i]);
   }
 
-  int n = 0;
   SurfaceMesh Mc = Mv;
   double tau = calculateTau(Mv, Mi, diagonalLength);
-  while (n < _conf.N) {
-    int bestIdx = -1;
+  for (int n = 0; n < _conf.N; n++) {
+    std::cout << "\r";
+    std::cout << "[carved mesh generation] iteration: " << n << "/" << _conf.N;
+    if (n == _conf.N - 1) {
+      std::cout << std::endl;
+    }
+
+    int bestIdx = 0;
     double deltaTauBest = 0;
     for (int i = 0; i < PrimitiveSet.size(); i++) {
       double tauP =
@@ -152,8 +157,9 @@ SurfaceMesh CarvedMeshGenerator::run(const SurfaceMesh& Mi,
     }
 
     if (deltaTauBest >= _conf.epsilonTau) {
+      SurfaceMesh newMc = subtract(Mc, PrimitiveSet[bestIdx]);
       Mc.clear();
-      Mc = subtract(Mc, PrimitiveSet[bestIdx]);
+      Mc = newMc;
       PrimitiveSet.erase(PrimitiveSet.begin() + bestIdx);
       n += 1;
       tau = tau - deltaTauBest;

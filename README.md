@@ -22,9 +22,8 @@ cmake --build build
 ## Run Demo
 ### Windows
 ```powershell
-# copy engine's dll to the directory where the executable lies at
-cp .\build\algorithms\Debug\Engine.dll .\build\demo\Debug
-.\build\demo\Debug\demo.exe
+.\init.ps1
+.\build\demo\Debug\demo.exe .\resources\bunny5K.obj
 ```
 
 ## TODO

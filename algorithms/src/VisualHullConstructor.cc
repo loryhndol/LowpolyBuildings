@@ -43,11 +43,16 @@ SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
     }
   }
 
-  int n = 0;
   SurfaceMesh Mv = makeBBox(Mi);
   double tau = calculateTau(Mv, Mi, diagonalLength);
-  while (n < _conf.N) {
-    int bestIdx = -1;
+  for (int n = 0; n < _conf.N; n++) {
+    std::cout << "\r";
+    std::cout << "[visual hull construction] iteration: " << n << "/"
+              << _conf.N;
+    if (n == _conf.N - 1) {
+      std::cout << std::endl;
+    }
+    int bestIdx = 0;
     double deltaTauBest = 0;
     for (int i = 0; i < P.size(); i++) {
       double tauP = calculateTau(intersect(Mv, P[i]), Mi, diagonalLength);
@@ -59,8 +64,9 @@ SurfaceMesh VisualHullConstructor::run(SurfaceMesh& Mi) {
     }
 
     if (deltaTauBest >= _conf.epsilonTau) {
+      SurfaceMesh newMv = intersect(Mv, P[bestIdx]);
       Mv.clear();
-      Mv = intersect(Mv, P[bestIdx]);
+      Mv = newMv;
       P.erase(P.begin() + bestIdx);
       n += 1;
       tau = tau - deltaTauBest;

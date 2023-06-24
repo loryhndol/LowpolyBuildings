@@ -27,20 +27,12 @@ class OpenGLRenderer {
   int windowHeight;
 
   std::vector<std::unordered_map<ShaderType, Shader> >
-      shaders;  // 记录每个模型的着色器
+      shaders;  // shaders for each model
 
  public:
   OpenGLRenderer(GLFWwindow* window, int width, int height);
   ~OpenGLRenderer();
-  void render(Scene& scene, Camera& camera);
   std::vector<GLubyte> snapshot(Scene& scene, Camera& camera);
-  std::vector<GLubyte> snapshotV2(Scene& scene, Camera& camera, int modelIdx,
-                                  int shaderIdx);
-  std::vector<GLubyte> snapshotInstanced(Scene& scene,
-                                         std::vector<Camera>& cameraArray,
-                                         std::vector<Eigen::Vector2f>& offsets,
-                                         int modelIdx, int shaderIdx,
-                                         float scaleFactor);
   void addShader(const char* path, ShaderType t, int id);
   void addShader(ShaderType t, Shader s, int id);
   void bindWindow(GLFWwindow* window);
