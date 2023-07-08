@@ -240,14 +240,15 @@ std::vector<WeightedVector> VisualHullConstructor::fitPlanesFromRegions(
           areaOfTriangles[j] * tmpBarycenter * tmpBarycenter.transpose();
 
       lhs += localMatrix;
-
-      for (int j = 0; j < areaOfTriangles.size(); j++) {
-        sumOfArea += areaOfTriangles[j];
-      }
-      if (sumOfArea < 1e-15) {
-        continue;
-      }
     }
+
+    for (int j = 0; j < areaOfTriangles.size(); j++) {
+      sumOfArea += areaOfTriangles[j];
+    }
+    if (sumOfArea < 1e-15) {
+      continue;
+    }
+
     X /= sumOfArea;
 
     Eigen::MatrixXd rhs = sumOfArea * X * X.transpose();

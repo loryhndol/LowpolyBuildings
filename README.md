@@ -27,4 +27,4 @@ cmake --build build
 ```
 
 ## TODO
-- The code is currently built and running on Windows.
+- The code is currently built and running on Windows 10 with Visual Studio 2022.

@@ -23,7 +23,7 @@ struct WeightedVector {
   WeightedVector(Eigen::Vector3d d, double weight) : _d(d), _weight(weight) {}
 
   bool operator>(const WeightedVector& rhs) const {
-    return _weight > rhs._weight;
+    return _weight < rhs._weight;
   }
 };
 
