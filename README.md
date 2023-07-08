@@ -27,4 +27,4 @@ cmake --build build
 ```
 
 ## TODO
-- testing
+- The code is currently built and running on Windows.
