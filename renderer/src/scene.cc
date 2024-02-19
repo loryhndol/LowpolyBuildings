@@ -1,4 +1,4 @@
-#include "scene.h"
+#include "../include/scene.h"
 
 void Scene::loadMesh(const char* modelPath, bool centerAligned, bool noSlash) {
   MeshModel mesh(modelPath, noSlash);

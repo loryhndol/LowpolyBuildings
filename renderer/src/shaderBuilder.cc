@@ -1,4 +1,4 @@
-#include "shaderBuilder.h"
+#include "../include/shaderBuilder.h"
 
 ShaderBuilder* ShaderBuilder::pInstance = nullptr;
 
@@ -51,7 +51,6 @@ void ShaderBuilder::compile(Shader& s, ShaderType t) {
 }
 
 Shader readShaderFromSource(const char* path) {
-  // 读取文件
   std::string code;
   std::ifstream shaderFile(path);
   if (!shaderFile.is_open()) {
@@ -59,10 +58,11 @@ Shader readShaderFromSource(const char* path) {
     exit(-1);
   }
 
-  std::string s = "";
-  while (std::getline(shaderFile, s)) {
-    code = code + s + "\n";
-  }
+  // read the string from the shaderFile
+  std::stringstream ss;
+  ss << shaderFile.rdbuf();
+  code = ss.str();
+
   shaderFile.close();
 
   return Shader{path, code};

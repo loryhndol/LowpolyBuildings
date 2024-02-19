@@ -1,4 +1,4 @@
-#include "OpenGLRenderer.h"
+#include "../include/OpenGLRenderer.h"
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) {
   glViewport(0, 0, width, height);
@@ -14,37 +14,12 @@ OpenGLRenderer::~OpenGLRenderer() {
 }
 
 void OpenGLRenderer::addShader(const char* path, ShaderType t, int id) {
-  std::string code;
-  std::ifstream shaderFile(path);
-  if (!shaderFile.is_open()) {
-    fprintf(stderr, "[OPENGL RENDERER]: Open File %s Failed\n", path);
-    exit(-1);
-  }
-
-  std::string s = "";
-  while (std::getline(shaderFile, s)) {
-    code = code + s + "\n";
-  }
-  shaderFile.close();
-
-  Shader res{path, code};
+  Shader res = readShaderFromSource(path);
   if (id < 0) {
     throw std::out_of_range("[OPENGL RENDERER]: Index should not be negative");
   }
 
-  if (shaders.empty()) {
-    std::unordered_map<ShaderType, Shader> m;
-    m.insert(std::make_pair(t, res));
-    shaders.push_back(m);
-  } else {
-    if (id <= shaders.size() - 1) {
-      shaders[id].insert(std::make_pair(t, res));
-    } else {
-      std::unordered_map<ShaderType, Shader> m;
-      m.insert(std::make_pair(t, res));
-      shaders.push_back(m);
-    }
-  }
+  addShader(t, res, id);
 }
 
 void OpenGLRenderer::addShader(ShaderType t, Shader s, int id) {
@@ -149,7 +124,6 @@ std::vector<GLubyte> OpenGLRenderer::snapshot(Scene& scene, Camera& camera) {
       glEnableVertexAttribArray(1);
 
       glActiveTexture(GL_TEXTURE0);
-      // glBindTexture(GL_TEXTURE_2D, )
     }
 
     if (m.useNormals) {
@@ -176,14 +150,12 @@ std::vector<GLubyte> OpenGLRenderer::snapshot(Scene& scene, Camera& camera) {
 
   Eigen::Vector3d directionOfView(1.0, 0.0, 1.0);
 
-  // 渲染到 Stencil buffer
+  // Stencil buffer settings
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
   glClearColor(0.1, 0.5, 0.5, 1.0);
   glClearStencil(0);
   glStencilOp(GL_KEEP, GL_KEEP, GL_REPLACE);
-  glStencilFunc(
-      GL_ALWAYS, 1,
-      0xFF);  // 只要一个片段的模板值等于(GL_EQUAL)参考值1，片段将会通过测试并被绘制，否则会被丢弃。
+  glStencilFunc(GL_ALWAYS, 1, 0xFF);
   glStencilMask(0xFF);
 
   float rotationDegreeX = 0.0;

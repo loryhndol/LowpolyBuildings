@@ -1,13 +1,16 @@
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.10)
 project(LowpolyGen)
 
-set(CMAKE_BUILD_TYPE "Release")
 set(CMAKE_CXX_STANDARD 17)
 
-set(GLFW_BUILD_DOCS OFF CACHE BOOL "GLFW lib only")
-set(GLFW_INSTALL OFF CACHE BOOL "GLFW lib only")
-add_subdirectory(third-party/glfw-3.3.7)
+find_package(OpenMP)
+find_package(CGAL REQUIRED)
+find_package(Eigen3 REQUIRED NO_MODULE)
+find_package(glfw3 REQUIRED)
 
+include_directories(${EIGEN3_INCLUDE_DIR} ${GLFW3_INCLUDE_DIR} ${CMAKE_SOURCE_DIR}/third-party/glad/include)
+
+add_subdirectory(third-party)
 add_subdirectory(renderer)
 add_subdirectory(algorithms)
 add_subdirectory(demo)

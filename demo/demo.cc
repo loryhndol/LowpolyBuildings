@@ -8,7 +8,7 @@
 
 int main(int argc, char* argv[]) {
   if (argc != 2) {
-    std::cout << "Usage: ./demo.exe [methPath]" << std::endl;
+    std::cout << "Usage: ./demo.exe [meshPath]" << std::endl;
     return 0;
   }
 

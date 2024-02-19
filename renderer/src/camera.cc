@@ -1,4 +1,4 @@
-#include "camera.h"
+#include "../include/camera.h"
 
 Camera::Camera(float fov, float aspectRatio, float near, float far)
     : _fov(fov), _aspectRatio(aspectRatio), _near(near), _far(far) {
@@ -14,8 +14,7 @@ Camera::Camera(float fov, float aspectRatio, float near, float far)
 
   float yScale = 1.0 / std::tan(fov / 2);
   float xScale = yScale / aspectRatio;
-  // 透视变换矩阵公式参考
-  // 实时渲染中的坐标系变换（4）：投影变换-2 - IgorKakarote的文章 - 知乎
+  // perspective transform reference:
   // https://zhuanlan.zhihu.com/p/114729671
   _perspectiveMatrix << xScale, 0, 0, 0, 0, yScale, 0, 0, 0, 0,
       -(far + near) / (far - near), -2.0 * near * far / (far - near), 0, 0,

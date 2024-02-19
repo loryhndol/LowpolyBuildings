@@ -1,10 +1,10 @@
-## LowpolyBuildings
+# LowpolyBuildings
 
 Implementation of `Xifeng Gao, Kui Wu, Zherong Pan. Low-poly Mesh Generation for Building Models. SIGGRAPH 2022`
 
 ## Dependencies
 
-- CGAL: polygon mesh processing
+- CGAL(latest git): polygon mesh processing
 
 - Eigen: linear algebra
 
@@ -15,16 +15,19 @@ Implementation of `Xifeng Gao, Kui Wu, Zherong Pan. Low-poly Mesh Generation for
 ## Build
 
 ```bash
-cmake -B build -DEigen3_DIR=$HOME/mypackages/share/eigen3/cmake/
+cmake -B build -DEigen3_DIR=<Eigen3_DIR> -DCGAL_DIR=<CGAL_DIR> -DGLFW_DIR=<GLFW_DIR> -DGLAD_DIR=<GLAD_DIR>
 cmake --build build
 ```
 
-## Run Demo
-### Windows
+## Demo
+
+on Windows
+
 ```powershell
 .\init.ps1
-.\build\demo\Debug\demo.exe .\resources\bunny5K.obj
+.\build\demo\Release\demo.exe .\resources\bunny5K.obj
 ```
 
 ## TODO
+
 - The code is currently built and running on Windows 10 with Visual Studio 2022.

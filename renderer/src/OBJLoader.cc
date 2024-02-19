@@ -1,4 +1,4 @@
-#include "OBJLoader.h"
+#include "../include/OBJLoader.h"
 
 MeshModel::MeshModel(std::vector<Eigen::Vector3f>& verts)
     : numVertices(verts.size()),
@@ -16,8 +16,6 @@ MeshModel::MeshModel(const char* filePath, bool noSlash) {
   numVertices = modelLoader.numVertices;
   int numRenderVertices = modelLoader.triangleVertices.size() / 3;
   int numFaces = numRenderVertices / 3;
-  // std::cout << "Number of identical vertices: " << numVertices << std::endl;
-  // std::cout << "Number of faces: " << numFaces << std::endl;
 
   std::vector<float>& verts = modelLoader.triangleVertices;
   std::vector<float>& tcs = modelLoader.textureValues;
